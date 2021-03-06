@@ -1,3 +1,4 @@
+#!/usr/bin/python
 ############################################################################
 #                                                                          #
 #  http://www.research.att.com/~njas/sequences/a080069.py.txt              #
@@ -24,8 +25,11 @@
 #  (tested with version 1.1.5, on Python 2.4.)                             #
 #  See: http://www.pythonware.com/library/pil/handbook/index.htm           #
 #                                                                          #
-#  Last edited  Nov 13 2012 by Antti Karttunen.                            #
+#  Edited  Nov 13 2012 by Antti Karttunen.                                 #
 #  (Added gen_from_bfile routine for drawing A218776 - A218782 via bfiles) #
+#                                                                          #
+#  Edited 2019 10 05 by karttu (new 1D CA related sequences: A327971 etc   #
+#                                                                          #
 #                                                                          #
 ############################################################################
 
@@ -691,8 +695,124 @@ def genA0newX():
        yield i
        i = A079946(tb_A082360(i))
 
+#
+# One-dimensional cellular automata
+#
+
+def A048727(n): return(n^(n<<1)^(n<<2))
+
+def A269160(n):
+    '''Formula for Wolfram's Rule 30 cellular automaton: a(n) = n XOR (2n OR 4n).'''
+    return(n^((n<<1)|(n<<2)))
+
+def A269161(n):
+    '''Formula for Wolfram's Rule 86 cellular automaton: a(n) = 4n XOR (2n OR n).'''
+    return((n<<2)^((n<<1)|n))
+
+def A269174(n):
+    '''Formula for Wolfram's Rule 124 cellular automaton: a(n) = (n OR 2n) AND ((n XOR 2n) OR (n XOR 4n)).'''
+    return((n|(n<<1))&((n^(n<<1))|(n^(n<<2))))
 
 
+def genA038184():
+    '''Yield successive terms of A038184, 1, 7, 21, 107, 273, 1911, ... (Rule 150) starting from A038184(0)=1.'''
+    s = 1
+    while True:
+       yield s
+       s = A048727(s)
+
+
+def genA110240():
+    '''Yield successive terms of A110240 (Rule 30) starting from A110240(0)=1.'''
+    s = 1
+    while True:
+       yield s
+       s = A269160(s)
+
+def genA265281():
+    '''Yield successive terms of A265281 (Rule 86), starting from A265281(0)=1.'''
+    s = 1
+    while True:
+       yield s
+       s = A269161(s)
+
+def genA267357():
+    '''Yield successive terms of A267357 (Rule 124), starting from A267357(0)=1.'''
+    s = 1
+    while True:
+       yield s
+       s = A269174(s)
+
+
+def genA327971():
+    '''Yield successive terms of A327971, 0, 0, 10, 20, 130, 396, 2842, ...: a(n) = A110240(n) XOR A265281(n).'''
+    s1 = 1
+    s2 = 1
+    while True:
+       yield (s1^s2)
+       s1 = A269160(s1)
+       s2 = A269161(s2)
+
+
+def genA327972():
+    '''Yield successive terms of A327972, 0, 0, 12, 4, 128, 384, ...: a(n) = A110240(n) XOR A038184(n).'''
+    s1 = 1
+    s2 = 1
+    while True:
+       yield (s1^s2)
+       s1 = A269160(s1)
+       s2 = A048727(s2)
+
+
+def genA327973():
+    '''Yield successive terms of A327973, 5, 23, 93, 335, 1493, 5351, ...: a(n) = A110240(n) XOR 2*A110240(n-1).'''
+    s = 1
+    while True:
+       t = A269160(s)
+       yield (t^(s<<1))
+       s = t
+
+
+def genA327976():
+    '''Yield successive terms of A327976, 5, 23, 73, 359, 1233, ...: a(n) = A110240(n) XOR 2*A265281(n-1).'''
+    s1 = 1
+    s2 = 1
+    while True:
+       s1 = A269160(s1)
+       yield (s1^(s2<<1))
+       s2 = A269161(s2)
+
+
+def genA328104():
+    '''Yield successive terms of A328104, 3, 15, 59, 255, 947, ...: a(n) = A163617(A110240(n)) = A110240(n) OR 2*A110240(n).'''
+    s = 1
+    while True:
+       yield (s|(s<<1))
+       s = A269160(s)
+
+
+def genA328103():
+    '''Yield successive terms of A328103 (= A110240(n) XOR A267357(n)).'''
+    s1 = 1
+    s2 = 1
+    while True:
+       yield (s1^s2)
+       s1 = A269174(s1)
+       s2 = A269160(s2)
+#      s1 = (s1^(4*s1))
+#      s2 = A079946(tb_A082358(s2))
+#      s2 = tb_A057163(A079946(tb_A057164(s2)))
+
+def genA328111():
+    '''Yield successive terms of A328111 (= A080069(n) OR A267357(n)).'''
+    s1 = 1
+    s2 = 0
+    while True:
+       yield (s1|s2)
+       s1 = A269174(s1)
+       s2 = tb_A057163(A079946(tb_A057164(s2)))
+
+       
 ########################################################################
 #
 #
@@ -709,8 +829,10 @@ def genA0newX():
 # See: http://www.pythonware.com/library/pil/handbook/index.htm
 # The graphics interface uses the same coordinate system as PIL itself,
 # with (0, 0) in the upper left corner.
+# Can be installed in Ubuntu with shell command pip install Pillow
+# (and with sudo apt install python-pip before that, if needed)
 
-import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 def draw_point(draw,x,y,scale,color):
   pixrange = range(scale)
@@ -917,16 +1039,16 @@ def do_it_for_A179417(upto_n,scale):
 
 
 def do_it_for_A218776(upto_n,scale):
-  draw_up_to_n((gen_from_bfile("b218776.upto4096.txt"))(),upto_n,scale,"218776","See: http://oeis.org/218776")
+  draw_up_to_n((gen_from_bfile("b218776.upto4096.txt"))(),upto_n,scale,"218776","See: http://oeis.org/A218776")
 
 def do_it_for_A218778(upto_n,scale):
-  draw_up_to_n((gen_from_bfile("b218778.upto4096.txt"))(),upto_n,scale,"218778","See: http://oeis.org/218778")
+  draw_up_to_n((gen_from_bfile("b218778.upto4096.txt"))(),upto_n,scale,"218778","See: http://oeis.org/A218778")
 
 def do_it_for_A218780(upto_n,scale):
-  draw_up_to_n((gen_from_bfile("b218780.upto4096.txt"))(),upto_n,scale,"218780","See: http://oeis.org/218780")
+  draw_up_to_n((gen_from_bfile("b218780.upto4096.txt"))(),upto_n,scale,"218780","See: http://oeis.org/A218780")
 
 def do_it_for_A218782(upto_n,scale):
-  draw_up_to_n((gen_from_bfile("b218782.upto4096.txt"))(),upto_n,scale,"218782","See: http://oeis.org/218782")
+  draw_up_to_n((gen_from_bfile("b218782.upto4096.txt"))(),upto_n,scale,"218782","See: http://oeis.org/A218782")
 
 
 def do_it_for_A1new0(upto_n,scale):
@@ -972,8 +1094,34 @@ def do_it_for_A0new15(upto_n,scale):
 def do_it_for_A0new16(upto_n,scale):
   draw_up_to_n(genA0new16(),upto_n,scale,"900016","See: http://oeis.org/A0new16")
 
+def do_it_for_A110240(upto_n,scale):
+  draw_up_to_n(genA110240(),upto_n,scale,"110240","See: http://oeis.org/A110240")
 
+def do_it_for_A267357(upto_n,scale):
+  draw_up_to_n(genA267357(),upto_n,scale,"267357","See: http://oeis.org/A110240")
+  
+def do_it_for_A327971(upto_n,scale):
+  draw_up_to_n(genA327971(),upto_n,scale,"327971","See: http://oeis.org/A327971")
 
+def do_it_for_A327972(upto_n,scale):
+  draw_up_to_n(genA327972(),upto_n,scale,"327972","See: http://oeis.org/A327972")
+
+def do_it_for_A327973(upto_n,scale):
+  draw_up_to_n(genA327973(),upto_n,scale,"327973","See: http://oeis.org/A327973")
+
+def do_it_for_A327976(upto_n,scale):
+  draw_up_to_n(genA327976(),upto_n,scale,"327976","See: http://oeis.org/A327976")
+
+def do_it_for_A328103(upto_n,scale):
+  draw_up_to_n(genA328103(),upto_n,scale,"328103","See: http://oeis.org/A328103")
+
+def do_it_for_A328104(upto_n,scale):
+  draw_up_to_n(genA328104(),upto_n,scale,"328104","See: http://oeis.org/A328104")
+
+def do_it_for_A328111(upto_n,scale):
+  draw_up_to_n(genA328111(),upto_n,scale,"328111","See: http://oeis.org/A328111")
+
+  
 ########################################################################
 #                                                                      #
 #  For the comparison, here are Scheme-implementations of some of the  #
