@@ -1,7 +1,7 @@
 #!/usr/bin/python
 ############################################################################
 #                                                                          #
-#  http://www.research.att.com/~njas/sequences/a080069.py.txt              #
+#  http://oeis.org/A080069/a080069.py.txt                                  #
 #                                                                          #
 #  Coded by Antti Karttunen (His-firstname.His-surname@gmail.com),         #
 #  August-September 2006.                                                  #
@@ -14,9 +14,6 @@
 #                            available at                                  #
 #                          http://oeis.org                                 #
 #                                                                          #
-#  Copy of THIS source file is also available at:                          #
-#  http://www.iki.fi/kartturi/matikka/Nekomorphisms/a080069.py             #
-#                                                                          #
 #  This Python-code is in Public Domain and runs (at least)                #
 #  in Python 2.4.2 (#67, Sep 28 2005, 12:41:11)                            #
 #  (See www.python.org)                                                    #
@@ -28,8 +25,11 @@
 #  Edited  Nov 13 2012 by Antti Karttunen.                                 #
 #  (Added gen_from_bfile routine for drawing A218776 - A218782 via bfiles) #
 #                                                                          #
-#  Edited 2019 10 05 by karttu (new 1D CA related sequences: A327971 etc   #
+#  Edited 2019 10 05 by karttu (new 1D CA related sequences: A327971 etc)  #
 #                                                                          #
+#  Edited 2024 09 23 by karttu (new: A376402, A376405, A376412, A376415)   #
+#  Reimplemented "cropped width" feature for creating tall png's centered  #
+#  around the center).                                                     #
 #                                                                          #
 ############################################################################
 
@@ -530,14 +530,63 @@ def genA122242():
        i = A079946(tb_A082358(i))
 
 
+def genA376402():
+    '''Yield successive terms of A376402, 164, 628, 2444, 10040, 34424, 142400, ...: a(n) = A122242(1+n) XOR 2*A122242(n).'''
+    s = 42
+    while True:
+       t = A079946(tb_A082358(s))
+       yield (t^(s<<1))
+       s = t
+
+
+def genA376412():
+    '''Yield successive terms of A376412, 14544, 64920, 258096, 925720, 3703264, ...: a(n) = A122242(4+n) XOR 16*A122242(n).'''
+    t0 = 42
+    t1 = A079946(tb_A082358(t0))
+    t2 = A079946(tb_A082358(t1))
+    t3 = A079946(tb_A082358(t2))
+    while True:
+       t4 = A079946(tb_A082358(t3))
+       yield (t4^(t0<<4))
+       t0 = t1
+       t1 = t2
+       t2 = t3
+       t3 = t4
+
+
+       
 def genA122245():
     '''Yield successive terms of A122245, starting from A122245(1)=44.'''
-    i = 44 # Similar looking. Should compute for starting values 50 and 52 also.
+    i = 44 # Similar looking to A122242. Should compute for starting values 50 and 52 also.
     while True:
        yield i
        i = A079946(tb_A082358(i))
 
 
+def genA376405():
+    '''Yield successive terms of A376405, 176, 584, 2068, 9232, 38952, 135296, ...: a(n) = A122245(1+n) XOR 2*A122245(n).'''
+    s = 44
+    while True:
+       t = A079946(tb_A082358(s))
+       yield (t^(s<<1))
+       s = t
+
+
+def genA376415():
+    '''Yield successive terms of A376415, 14488, 57880, 258096, 1033752, 3702824, ...: a(n) = A122245(4+n) XOR 16*A122245(n).'''
+    t0 = 44
+    t1 = A079946(tb_A082358(t0))
+    t2 = A079946(tb_A082358(t1))
+    t3 = A079946(tb_A082358(t2))
+    while True:
+       t4 = A079946(tb_A082358(t3))
+       yield (t4^(t0<<4))
+       t0 = t1
+       t1 = t2
+       t2 = t3
+       t3 = t4
+
+       
 def genA179755():
     '''Yield successive terms of A179755, starting from A179755(1)=50.'''
     i = 50
@@ -847,16 +896,16 @@ def draw_bin_string(draw,row,scale,width,height,ymargin,binstr):
   y = scale*(row - 1) + ymargin
   black = (0,0,0)
   white = (256,256,256)
-  pixrange = range(scale)
-  while 0 != binstr:
+
+  while 0 != binstr and x >= 0:
     if (1 == (binstr%2)): color = black # 1's are black.
     else:                 color = white # 0's are white.
-    draw_point(draw,x,y,scale,color)
+    if (x < width): draw_point(draw,x,y,scale,color)
     binstr >>= 1
     x -= scale
 
 
-def draw_up_to_n(gen,upto_n,scale,filebase,captext):
+def draw_up_to_n(gen,upto_n,scale,filebase,captext,maxwidth):
   '''Draw binary strings produced by generator gen, up to upto_n:th row, saving
      the image to the file, with additional caption "captext", if present.'''
 
@@ -874,16 +923,14 @@ def draw_up_to_n(gen,upto_n,scale,filebase,captext):
 
   firstwid = (A000523(binstr)+1)
 
-  width  = 2*(scale*upto_n) + (scale*firstwid) + 2*xmargin
+  if(maxwidth>0): width = maxwidth
+  else:           width = 2*(scale*upto_n) + (scale*firstwid) + 2*xmargin
   height = (scale*upto_n) + 2*ymargin
   image = Image.new("RGB",(width,height),(128,000,000)) # Nice red background
-# image = Image.new("RGB",(width,height),(000,128,000)) # Nice toxic green background
   draw = ImageDraw.Draw(image)
   draw_bin_string(draw,row,scale,width,height,ymargin,binstr)
 
   row += 1
-
-# x = (width-1) - (width-(A000523(binstr)+1))/2 # Get it into center.
 
 # And then the rest:
   for binstr in gen:
@@ -1004,124 +1051,148 @@ def draw_binseq_from_bfile(filebase,firstwid,scale,captext):
 
 
 # Very fine texture, like a pyramid of sand polished by the wind!
-def do_it_for_A080069(upto_n,scale):
-  draw_up_to_n(genA080069(),upto_n,scale,"080069","See: http://oeis.org/A080069")
+def do_it_for_A080069(upto_n,scale,mw):
+  draw_up_to_n(genA080069(),upto_n,scale,"080069","See: http://oeis.org/A080069",mw)
 
 # Boringly regular:
-def do_it_for_A122229(upto_n,scale):
-  draw_up_to_n(genA122229(),upto_n,scale,"122229","See: http://oeis.org/A122229")
+def do_it_for_A122229(upto_n,scale,mw):
+  draw_up_to_n(genA122229(),upto_n,scale,"122229","See: http://oeis.org/A122229",mw)
 
 # Chaotic:
-def do_it_for_A122232(upto_n,scale):
-  draw_up_to_n(genA122232(),upto_n,scale,"122232","See: http://oeis.org/A122232")
+def do_it_for_A122232(upto_n,scale,mw):
+  draw_up_to_n(genA122232(),upto_n,scale,"122232","See: http://oeis.org/A122232",mw)
 
-def do_it_for_A122235(upto_n,scale):
-  draw_up_to_n(genA122235(),upto_n,scale,"122235","See: http://oeis.org/A122235")
+def do_it_for_A122235(upto_n,scale,mw):
+  draw_up_to_n(genA122235(),upto_n,scale,"122235","See: http://oeis.org/A122235",mw)
 
 # Are the "circles" real?
-def do_it_for_A122239(upto_n,scale):
-  draw_up_to_n(genA122239(),upto_n,scale,"122239","See: http://oeis.org/A122239")
+def do_it_for_A122239(upto_n,scale,mw):
+  draw_up_to_n(genA122239(),upto_n,scale,"122239","See: http://oeis.org/A122239",mw)
 
-def do_it_for_A122242(upto_n,scale):
-  draw_up_to_n(genA122242(),upto_n,scale,"122242","See: http://oeis.org/A122242")
+def do_it_for_A122242(upto_n,scale,mw):
+  draw_up_to_n(genA122242(),upto_n,scale,"122242","See: http://oeis.org/A122242",mw)
 
-def do_it_for_A122245(upto_n,scale):
-  draw_up_to_n(genA122245(),upto_n,scale,"122245","See: http://oeis.org/A122245")
+def do_it_for_A122245(upto_n,scale,mw):
+  draw_up_to_n(genA122245(),upto_n,scale,"122245","See: http://oeis.org/A122245",mw)
 
-def do_it_for_A179755(upto_n,scale):
-  draw_up_to_n(genA179755(),upto_n,scale,"179755","See: http://oeis.org/A179755")
+def do_it_for_A179755(upto_n,scale,mw):
+  draw_up_to_n(genA179755(),upto_n,scale,"179755","See: http://oeis.org/A179755",mw)
 
-def do_it_for_A179757(upto_n,scale):
-  draw_up_to_n(genA179757(),upto_n,scale,"179757","See: http://oeis.org/A179757")
+def do_it_for_A179757(upto_n,scale,mw):
+  draw_up_to_n(genA179757(),upto_n,scale,"179757","See: http://oeis.org/A179757",mw)
 
-def do_it_for_A179417(upto_n,scale):
-  draw_up_to_n(genA179417(),upto_n,scale,"179417","See: http://oeis.org/A179417")
-
-
-def do_it_for_A218776(upto_n,scale):
-  draw_up_to_n((gen_from_bfile("b218776.upto4096.txt"))(),upto_n,scale,"218776","See: http://oeis.org/A218776")
-
-def do_it_for_A218778(upto_n,scale):
-  draw_up_to_n((gen_from_bfile("b218778.upto4096.txt"))(),upto_n,scale,"218778","See: http://oeis.org/A218778")
-
-def do_it_for_A218780(upto_n,scale):
-  draw_up_to_n((gen_from_bfile("b218780.upto4096.txt"))(),upto_n,scale,"218780","See: http://oeis.org/A218780")
-
-def do_it_for_A218782(upto_n,scale):
-  draw_up_to_n((gen_from_bfile("b218782.upto4096.txt"))(),upto_n,scale,"218782","See: http://oeis.org/A218782")
+def do_it_for_A179417(upto_n,scale,mw):
+  draw_up_to_n(genA179417(),upto_n,scale,"179417","See: http://oeis.org/A179417",mw)
 
 
-def do_it_for_A1new0(upto_n,scale):
-  draw_up_to_n(genA1new0(),upto_n,scale,"800000","See: http://oeis.org/A1new0")
+def do_it_for_A218776(upto_n,scale,mw):
+  draw_up_to_n((gen_from_bfile("b218776.upto4096.txt"))(),upto_n,scale,"218776","See: http://oeis.org/A218776",mw)
 
-def do_it_for_A1new1(upto_n,scale):
-  draw_up_to_n(genA1new1(),upto_n,scale,"800001","See: http://oeis.org/A1new1")
+def do_it_for_A218778(upto_n,scale,mw):
+  draw_up_to_n((gen_from_bfile("b218778.upto4096.txt"))(),upto_n,scale,"218778","See: http://oeis.org/A218778",mw)
 
-def do_it_for_A1new2(upto_n,scale):
-  draw_up_to_n(genA1new2(),upto_n,scale,"800002","See: http://oeis.org/A1new2")
+def do_it_for_A218780(upto_n,scale,mw):
+  draw_up_to_n((gen_from_bfile("b218780.upto4096.txt"))(),upto_n,scale,"218780","See: http://oeis.org/A218780",mw)
+
+def do_it_for_A218782(upto_n,scale,mw):
+  draw_up_to_n((gen_from_bfile("b218782.upto4096.txt"))(),upto_n,scale,"218782","See: http://oeis.org/A218782",mw)
 
 
-def do_it_for_A0new3(upto_n,scale):
-  draw_up_to_n(genA0new3(),upto_n,scale,"900003","See: http://oeis.org/A0new3")
+def do_it_for_A1new0(upto_n,scale,mw):
+  draw_up_to_n(genA1new0(),upto_n,scale,"800000","See: http://oeis.org/A1new0",mw)
 
-def do_it_for_A0new4(upto_n,scale):
-  draw_up_to_n(genA0new4(),upto_n,scale,"900004","See: http://oeis.org/A0new4")
+def do_it_for_A1new1(upto_n,scale,mw):
+  draw_up_to_n(genA1new1(),upto_n,scale,"800001","See: http://oeis.org/A1new1",mw)
 
-def do_it_for_A0new5(upto_n,scale):
-  draw_up_to_n(genA0new5(),upto_n,scale,"900005","See: http://oeis.org/A0new5")
+def do_it_for_A1new2(upto_n,scale,mw):
+  draw_up_to_n(genA1new2(),upto_n,scale,"800002","See: http://oeis.org/A1new2",mw)
 
-def do_it_for_A0new6(upto_n,scale):
-  draw_up_to_n(genA0new6(),upto_n,scale,"900006","See: http://oeis.org/A0new6")
 
-def do_it_for_A0new7(upto_n,scale):
-  draw_up_to_n(genA0new7(),upto_n,scale,"900007","See: http://oeis.org/A0new7")
+def do_it_for_A0new3(upto_n,scale,mw):
+  draw_up_to_n(genA0new3(),upto_n,scale,"900003","See: http://oeis.org/A0new3",mw)
 
-def do_it_for_A0new11(upto_n,scale):
-  draw_up_to_n(genA0new11(),upto_n,scale,"900011","See: http://oeis.org/A0new11")
+def do_it_for_A0new4(upto_n,scale,mw):
+  draw_up_to_n(genA0new4(),upto_n,scale,"900004","See: http://oeis.org/A0new4",mw)
 
-def do_it_for_A0new12(upto_n,scale):
-  draw_up_to_n(genA0new12(),upto_n,scale,"900012","See: http://oeis.org/A0new12")
+def do_it_for_A0new5(upto_n,scale,mw):
+  draw_up_to_n(genA0new5(),upto_n,scale,"900005","See: http://oeis.org/A0new5",mw)
 
-def do_it_for_A0new13(upto_n,scale):
-  draw_up_to_n(genA0new13(),upto_n,scale,"900013","See: http://oeis.org/A0new13")
+def do_it_for_A0new6(upto_n,scale,mw):
+  draw_up_to_n(genA0new6(),upto_n,scale,"900006","See: http://oeis.org/A0new6",mw)
 
-def do_it_for_A0new14(upto_n,scale):
-  draw_up_to_n(genA0new14(),upto_n,scale,"900014","See: http://oeis.org/A0new14")
+def do_it_for_A0new7(upto_n,scale,mw):
+  draw_up_to_n(genA0new7(),upto_n,scale,"900007","See: http://oeis.org/A0new7",mw)
 
-def do_it_for_A0new15(upto_n,scale):
-  draw_up_to_n(genA0new15(),upto_n,scale,"900015","See: http://oeis.org/A0new15")
+def do_it_for_A0new11(upto_n,scale,mw):
+  draw_up_to_n(genA0new11(),upto_n,scale,"900011","See: http://oeis.org/A0new11",mw)
 
-def do_it_for_A0new16(upto_n,scale):
-  draw_up_to_n(genA0new16(),upto_n,scale,"900016","See: http://oeis.org/A0new16")
+def do_it_for_A0new12(upto_n,scale,mw):
+  draw_up_to_n(genA0new12(),upto_n,scale,"900012","See: http://oeis.org/A0new12",mw)
 
-def do_it_for_A110240(upto_n,scale):
-  draw_up_to_n(genA110240(),upto_n,scale,"110240","See: http://oeis.org/A110240")
+def do_it_for_A0new13(upto_n,scale,mw):
+  draw_up_to_n(genA0new13(),upto_n,scale,"900013","See: http://oeis.org/A0new13",mw)
 
-def do_it_for_A267357(upto_n,scale):
-  draw_up_to_n(genA267357(),upto_n,scale,"267357","See: http://oeis.org/A110240")
+def do_it_for_A0new14(upto_n,scale,mw):
+  draw_up_to_n(genA0new14(),upto_n,scale,"900014","See: http://oeis.org/A0new14",mw)
+
+def do_it_for_A0new15(upto_n,scale,mw):
+  draw_up_to_n(genA0new15(),upto_n,scale,"900015","See: http://oeis.org/A0new15",mw)
+
+def do_it_for_A0new16(upto_n,scale,mw):
+  draw_up_to_n(genA0new16(),upto_n,scale,"900016","See: http://oeis.org/A0new16",mw)
+
+def do_it_for_A110240(upto_n,scale,mw):
+  draw_up_to_n(genA110240(),upto_n,scale,"110240","See: http://oeis.org/A110240",mw)
+
+def do_it_for_A267357(upto_n,scale,mw):
+  draw_up_to_n(genA267357(),upto_n,scale,"267357","See: http://oeis.org/A110240",mw)
   
-def do_it_for_A327971(upto_n,scale):
-  draw_up_to_n(genA327971(),upto_n,scale,"327971","See: http://oeis.org/A327971")
+def do_it_for_A327971(upto_n,scale,mw):
+  draw_up_to_n(genA327971(),upto_n,scale,"327971","See: http://oeis.org/A327971",mw)
 
-def do_it_for_A327972(upto_n,scale):
-  draw_up_to_n(genA327972(),upto_n,scale,"327972","See: http://oeis.org/A327972")
+def do_it_for_A327972(upto_n,scale,mw):
+  draw_up_to_n(genA327972(),upto_n,scale,"327972","See: http://oeis.org/A327972",mw)
 
-def do_it_for_A327973(upto_n,scale):
-  draw_up_to_n(genA327973(),upto_n,scale,"327973","See: http://oeis.org/A327973")
+def do_it_for_A327973(upto_n,scale,mw):
+  draw_up_to_n(genA327973(),upto_n,scale,"327973","See: http://oeis.org/A327973",mw)
 
-def do_it_for_A327976(upto_n,scale):
-  draw_up_to_n(genA327976(),upto_n,scale,"327976","See: http://oeis.org/A327976")
+def do_it_for_A327976(upto_n,scale,mw):
+  draw_up_to_n(genA327976(),upto_n,scale,"327976","See: http://oeis.org/A327976",mw)
 
-def do_it_for_A328103(upto_n,scale):
-  draw_up_to_n(genA328103(),upto_n,scale,"328103","See: http://oeis.org/A328103")
+def do_it_for_A328103(upto_n,scale,mw):
+  draw_up_to_n(genA328103(),upto_n,scale,"328103","See: http://oeis.org/A328103",mw)
 
-def do_it_for_A328104(upto_n,scale):
-  draw_up_to_n(genA328104(),upto_n,scale,"328104","See: http://oeis.org/A328104")
+def do_it_for_A328104(upto_n,scale,mw):
+  draw_up_to_n(genA328104(),upto_n,scale,"328104","See: http://oeis.org/A328104",mw)
 
-def do_it_for_A328111(upto_n,scale):
-  draw_up_to_n(genA328111(),upto_n,scale,"328111","See: http://oeis.org/A328111")
+def do_it_for_A328111(upto_n,scale,mw):
+  draw_up_to_n(genA328111(),upto_n,scale,"328111","See: http://oeis.org/A328111",mw)
 
-  
+def do_it_for_A376402(upto_n,scale,mw):
+  draw_up_to_n(genA376402(),upto_n,scale,"376402","See: http://oeis.org/A376402",mw)
+
+def do_it_for_A376405(upto_n,scale,mw):
+  draw_up_to_n(genA376405(),upto_n,scale,"376405","See: http://oeis.org/A376405",mw)
+
+def do_it_for_A376412(upto_n,scale,mw):
+  draw_up_to_n(genA376412(),upto_n,scale,"376412","See: http://oeis.org/A376412",mw)
+
+def do_it_for_A376415(upto_n,scale,mw):
+  draw_up_to_n(genA376415(),upto_n,scale,"376415","See: http://oeis.org/A376415",mw)
+
+
+# Invoke any of the above like this:
+
+do_it_for_A080069(2048, 1, 0)
+
+# do_it_for_A376405(2048, 1, 0)
+
+# or:
+
+# do_it_for_A122242(20000, 1, 1401)
+
+
+
 ########################################################################
 #                                                                      #
 #  For the comparison, here are Scheme-implementations of some of the  #
